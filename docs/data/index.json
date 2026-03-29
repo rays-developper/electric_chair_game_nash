@@ -1,0 +1,120 @@
+{
+  "chunks": 19,
+  "total": 556097,
+  "ranges": [
+    {
+      "file": "chunk_00.json",
+      "min_key": 4095,
+      "max_key": 1003227,
+      "count": 30000
+    },
+    {
+      "file": "chunk_01.json",
+      "min_key": 1003229,
+      "max_key": 1871015,
+      "count": 30000
+    },
+    {
+      "file": "chunk_02.json",
+      "min_key": 1871021,
+      "max_key": 10241452,
+      "count": 30000
+    },
+    {
+      "file": "chunk_03.json",
+      "min_key": 10241484,
+      "max_key": 18630438,
+      "count": 30000
+    },
+    {
+      "file": "chunk_04.json",
+      "min_key": 18630450,
+      "max_key": 26418408,
+      "count": 30000
+    },
+    {
+      "file": "chunk_05.json",
+      "min_key": 26418414,
+      "max_key": 33920367,
+      "count": 30000
+    },
+    {
+      "file": "chunk_06.json",
+      "min_key": 33920623,
+      "max_key": 38804124,
+      "count": 30000
+    },
+    {
+      "file": "chunk_07.json",
+      "min_key": 38804138,
+      "max_key": 43535910,
+      "count": 30000
+    },
+    {
+      "file": "chunk_08.json",
+      "min_key": 43535913,
+      "max_key": 50337433,
+      "count": 30000
+    },
+    {
+      "file": "chunk_09.json",
+      "min_key": 50337436,
+      "max_key": 54548186,
+      "count": 30000
+    },
+    {
+      "file": "chunk_10.json",
+      "min_key": 54548188,
+      "max_key": 59645210,
+      "count": 30000
+    },
+    {
+      "file": "chunk_11.json",
+      "min_key": 59645221,
+      "max_key": 67136367,
+      "count": 30000
+    },
+    {
+      "file": "chunk_12.json",
+      "min_key": 67136399,
+      "max_key": 72096108,
+      "count": 30000
+    },
+    {
+      "file": "chunk_13.json",
+      "min_key": 72096114,
+      "max_key": 79714204,
+      "count": 30000
+    },
+    {
+      "file": "chunk_14.json",
+      "min_key": 79714205,
+      "max_key": 84763517,
+      "count": 30000
+    },
+    {
+      "file": "chunk_15.json",
+      "min_key": 84764027,
+      "max_key": 92805749,
+      "count": 30000
+    },
+    {
+      "file": "chunk_16.json",
+      "min_key": 92805752,
+      "max_key": 101393658,
+      "count": 30000
+    },
+    {
+      "file": "chunk_17.json",
+      "min_key": 101393782,
+      "max_key": 117577853,
+      "count": 30000
+    },
+    {
+      "file": "chunk_18.json",
+      "min_key": 117577885,
+      "max_key": 140378143,
+      "count": 16097
+    }
+  ]
+}

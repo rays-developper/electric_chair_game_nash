@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>電気椅子ゲーム 均衡ルックアップ</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+    <header class="header">
+      <h1>⚡ 電気椅子ゲーム</h1>
+      <p class="tagline">均衡戦略ルックアップ</p>
+    </header>
+
+    <form id="lookup-form" class="form-grid">
+      <!-- ポイント入力パネル -->
+      <section class="panel">
+        <div class="panel-header">
+          <span class="panel-icon">🎯</span>
+          <h2>ポイント</h2>
+        </div>
+        <div class="panel-body two-col">
+          <div class="input-group">
+            <label for="attacker_points">座る側</label>
+            <div class="range-wrap">
+              <input type="range" id="attacker_points" min="0" max="39" value="0" />
+              <output id="attacker_points_value" class="range-badge attacker">0</output>
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="defender_points">仕掛ける側</label>
+            <div class="range-wrap">
+              <input type="range" id="defender_points" min="0" max="39" value="0" />
+              <output id="defender_points_value" class="range-badge defender">0</output>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 被電流回数パネル -->
+      <section class="panel">
+        <div class="panel-header">
+          <span class="panel-icon">⚡</span>
+          <h2>被電流回数</h2>
+        </div>
+        <div class="panel-body two-col">
+          <div class="input-group">
+            <label>座る側</label>
+            <div class="toggle-group" id="attacker_shocks_group">
+              <button type="button" class="toggle-btn attacker active" data-target="attacker_shocks" data-value="0">0回</button>
+              <button type="button" class="toggle-btn attacker" data-target="attacker_shocks" data-value="1">1回</button>
+              <button type="button" class="toggle-btn attacker" data-target="attacker_shocks" data-value="2">2回</button>
+            </div>
+          </div>
+          <div class="input-group">
+            <label>仕掛ける側</label>
+            <div class="toggle-group" id="defender_shocks_group">
+              <button type="button" class="toggle-btn defender active" data-target="defender_shocks" data-value="0">0回</button>
+              <button type="button" class="toggle-btn defender" data-target="defender_shocks" data-value="1">1回</button>
+              <button type="button" class="toggle-btn defender" data-target="defender_shocks" data-value="2">2回</button>
+            </div>
+          </div>
+        </div>
+        <input type="hidden" id="attacker_shocks" value="0" />
+        <input type="hidden" id="defender_shocks" value="0" />
+      </section>
+
+      <!-- 残り椅子パネル -->
+      <section class="panel wide">
+        <div class="panel-header">
+          <span class="panel-icon">🪑</span>
+          <h2>残り椅子</h2>
+          <div class="panel-actions">
+            <button type="button" class="action-btn" id="select_all">全選択</button>
+            <button type="button" class="action-btn" id="clear_all">全解除</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <p id="chairs_selection_status" class="status-bar">選択中: 12脚</p>
+          <div class="chair-grid" id="chair_grid"></div>
+          <input type="hidden" id="chairs" value="1,2,3,4,5,6,7,8,9,10,11,12" />
+        </div>
+      </section>
+
+      <div class="submit-row">
+        <button type="submit" class="submit-btn">
+          <span>均衡戦略を検索</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </form>
+
+    <!-- 結果パネル -->
+    <section class="panel result-panel" id="result-card">
+      <div class="panel-header">
+        <span class="panel-icon">📊</span>
+        <h2>検索結果</h2>
+      </div>
+      <div class="panel-body">
+        <div id="summary" class="summary-box status-msg">未検索</div>
+        <div class="result-grid">
+          <div class="result-col attacker-result">
+            <h3>座る側戦略</h3>
+            <table id="attacker-table">
+              <thead><tr><th>椅子</th><th>確率</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="result-col defender-result">
+            <h3>仕掛ける側戦略</h3>
+            <table id="defender-table">
+              <thead><tr><th>椅子</th><th>確率</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

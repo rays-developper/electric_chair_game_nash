@@ -12,7 +12,8 @@ from __future__ import annotations
 import sys
 from typing import List
 
-from .game_state import GameState, MAX_ROUNDS, MAX_SHOCKS, WIN_POINTS
+from .game_state import GameState, MAX_ROUNDS, MAX_SHOCKS
+from electric_chair_game.dynamic_solver import compute_full_game_equilibrium
 from .nash_solver import compute_nash_equilibrium
 
 
@@ -55,6 +56,14 @@ def main() -> None:
     print("=" * 52)
     print("  電気椅子ゲーム  Nash均衡戦略アナライザー")
     print("=" * 52)
+
+    # ── Mode ───────────────────────────────────
+    mode = input("\n解析モード [single / full] (default: single): ").strip().lower()
+    if not mode:
+        mode = "single"
+    if mode not in ("single", "full"):
+        print("エラー: 'single' または 'full' を入力してください。")
+        sys.exit(1)
 
     # ── Role ───────────────────────────────────
     role = input("\nあなたの役割 [attacker / defender]: ").strip().lower()
@@ -113,7 +122,21 @@ def main() -> None:
         print(f"\n  ※ ゲーム終了条件が成立しています (勝者: {gs.winner()})")
 
     # ── Nash equilibrium ───────────────────────
-    result = compute_nash_equilibrium(gs)
+    if mode == "single":
+        result = compute_nash_equilibrium(gs)
+
+        if role == "attacker":
+            _print_strategy(result["attacker_strategy"], "攻撃側の最適混合戦略 (あなた)")
+            _print_strategy(result["defender_strategy"], "守備側の最適混合戦略 (相手の推定)")
+        else:
+            _print_strategy(result["defender_strategy"], "守備側の最適混合戦略 (あなた)")
+            _print_strategy(result["attacker_strategy"], "攻撃側の最適混合戦略 (相手の推定)")
+
+        print(f"  Nash均衡における期待獲得ポイント (攻撃側): {result['game_value']:.3f}")
+        print()
+        return
+
+    result = compute_full_game_equilibrium(gs)
 
     if role == "attacker":
         _print_strategy(result["attacker_strategy"], "攻撃側の最適混合戦略 (あなた)")
@@ -122,7 +145,8 @@ def main() -> None:
         _print_strategy(result["defender_strategy"], "守備側の最適混合戦略 (あなた)")
         _print_strategy(result["attacker_strategy"], "攻撃側の最適混合戦略 (相手の推定)")
 
-    print(f"  Nash均衡における期待獲得ポイント (攻撃側): {result['game_value']:.3f}")
+    print("  8回戦全体DPにおける状態価値 (あなた視点):")
+    print(f"    {result['state_value']:.6f}  (1=勝ち確率優位, 0=五分, -1=不利)")
     print()
 
 
