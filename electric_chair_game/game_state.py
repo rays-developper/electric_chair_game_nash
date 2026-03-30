@@ -24,6 +24,8 @@ from typing import List
 # ──────────────────────────────────────────────
 ALL_CHAIRS: List[int] = list(range(1, 13))  # chairs 1 to 12
 MAX_ROUNDS: int = 8
+TURNS_PER_ROUND: int = 2
+MAX_TURNS: int = MAX_ROUNDS * TURNS_PER_ROUND
 WIN_POINTS: int = 40
 MAX_SHOCKS: int = 3
 
@@ -38,7 +40,7 @@ class GameState:
     Attributes:
         attacker_points: Current accumulated points of the attacker this round.
         defender_points: Current accumulated points of the defender this round.
-        round_num: Current round number (1-based).
+        round_num: Current turn number (1-based).
         remaining_chairs: Chair numbers still in play (not yet successfully claimed).
         attacker_shocks: Number of times the attacker has been shocked so far.
         defender_shocks: Number of times the defender (as attacker) has been shocked.
@@ -74,7 +76,7 @@ class GameState:
             return "defender"
         if self.is_insurmountable_lead():
             return "attacker" if self.attacker_points > self.defender_points else "defender"
-        if self.round_num > MAX_ROUNDS or len(self.remaining_chairs) <= 1:
+        if self.round_num > MAX_TURNS or len(self.remaining_chairs) <= 1:
             if self.attacker_points > self.defender_points:
                 return "attacker"
             elif self.defender_points > self.attacker_points:

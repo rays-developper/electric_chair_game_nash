@@ -28,7 +28,7 @@ from typing import Dict, Tuple
 
 import numpy as np
 
-from .game_state import MAX_ROUNDS, MAX_SHOCKS, WIN_POINTS, GameState
+from .game_state import MAX_SHOCKS, MAX_TURNS, WIN_POINTS, GameState
 from .nash_solver import _solve_attacker_lp, _solve_defender_lp
 
 
@@ -62,7 +62,7 @@ def _terminal_value(
     if abs(diff) > remaining_total:
         return 1.0 if diff > 0 else -1.0
 
-    if round_num > MAX_ROUNDS or len(chairs) <= 1:
+    if round_num > MAX_TURNS or len(chairs) <= 1:
         if p1_points > p2_points:
             return 1.0
         if p2_points > p1_points:

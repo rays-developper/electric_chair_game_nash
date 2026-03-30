@@ -58,65 +58,21 @@ def _next_subroots(root: GameState) -> list[GameState]:
     return subroots
 
 
-def _worker_build_subtree(payload: tuple[GameState, str]) -> tuple[str, int]:
-    state, shard_db_path = payload
-    records = solve_state_table_from_root(state)
-    count = save_state_table_to_sqlite(records, shard_db_path)
-    return shard_db_path, count
+def _worker_build_subtree(payload: tuple[GameState, str, int, int]) -> tuple[str, int]:
+    state, shard_db_path, save_interval, progress_interval = payload
 
+    conn = sqlite3.connect(shard_db_path)
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA synchronous=NORMAL")
+    create_lookup_schema(conn)
 
-def _merge_shards_into_db(main_db: Path, shard_paths: list[Path]) -> None:
-    conn = sqlite3.connect(main_db)
-    try:
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA synchronous=NORMAL")
-        create_lookup_schema(conn)
-        for idx, shard in enumerate(shard_paths):
-            alias = f"s{idx}"
-            conn.execute(f"ATTACH DATABASE '{shard.as_posix()}' AS {alias}")
-            conn.execute(
-                f"""
-                INSERT OR REPLACE INTO equilibrium_lookup(
-                    state_key,
-                    attacker_points,
-                    defender_points,
-                    attacker_shocks,
-                    defender_shocks,
-                    chair_mask,
-                    state_value,
-                    attacker_strategy,
-                    defender_strategy,
-                    is_terminal
-                )
-                SELECT
-                    state_key,
-                    attacker_points,
-                    defender_points,
-                    attacker_shocks,
-                    defender_shocks,
-                    chair_mask,
-                    state_value,
-                    attacker_strategy,
-                    defender_strategy,
-                    is_terminal
-                FROM {alias}.equilibrium_lookup
-                """
-            )
-            conn.execute(f"DETACH DATABASE {alias}")
-        conn.commit()
-    finally:
-        conn.close()
+    pending_rows: list[tuple] = []
 
-
-def _merge_one_shard_into_db(main_db: Path, shard: Path, alias: str = "s") -> None:
-    conn = sqlite3.connect(main_db)
-    try:
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA synchronous=NORMAL")
-        create_lookup_schema(conn)
-        conn.execute(f"ATTACH DATABASE '{shard.as_posix()}' AS {alias}")
-        conn.execute(
-            f"""
+    def flush_pending() -> int:
+        if not pending_rows:
+            return 0
+        conn.executemany(
+            """
             INSERT OR REPLACE INTO equilibrium_lookup(
                 state_key,
                 attacker_points,
@@ -128,7 +84,60 @@ def _merge_one_shard_into_db(main_db: Path, shard: Path, alias: str = "s") -> No
                 attacker_strategy,
                 defender_strategy,
                 is_terminal
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            pending_rows,
+        )
+        conn.commit()
+        flushed = len(pending_rows)
+        pending_rows.clear()
+        return flushed
+
+    def on_new_record(rec: StateRecord) -> None:
+        pending_rows.append(
+            (
+                rec.state_key,
+                rec.attacker_points,
+                rec.defender_points,
+                rec.attacker_shocks,
+                rec.defender_shocks,
+                rec.chair_mask,
+                rec.state_value,
+                json.dumps(rec.attacker_strategy, ensure_ascii=False),
+                json.dumps(rec.defender_strategy, ensure_ascii=False),
+                int(rec.is_terminal),
             )
+        )
+        if len(pending_rows) >= max(save_interval, 1):
+            flush_pending()
+
+    solve_state_table_from_root(
+        state,
+        progress_interval=max(progress_interval, 1),
+        progress_callback=lambda _count: flush_pending(),
+        on_new_record=on_new_record,
+    )
+    flush_pending()
+    count = int(conn.execute("SELECT COUNT(*) FROM equilibrium_lookup").fetchone()[0])
+    conn.close()
+    return shard_db_path, count
+
+
+def _merge_shards_into_db(main_db: Path, shard_paths: list[Path]) -> None:
+    for shard in shard_paths:
+        _merge_one_shard_into_db(main_db, shard)
+
+
+def _merge_one_shard_into_db(main_db: Path, shard: Path, alias: str = "s") -> None:
+    conn = sqlite3.connect(main_db)
+    src = sqlite3.connect(shard)
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+        create_lookup_schema(conn)
+
+        cursor = src.execute(
+            """
             SELECT
                 state_key,
                 attacker_points,
@@ -140,12 +149,33 @@ def _merge_one_shard_into_db(main_db: Path, shard: Path, alias: str = "s") -> No
                 attacker_strategy,
                 defender_strategy,
                 is_terminal
-            FROM {alias}.equilibrium_lookup
+            FROM equilibrium_lookup
             """
         )
-        conn.execute(f"DETACH DATABASE {alias}")
-        conn.commit()
+        while True:
+            batch = cursor.fetchmany(5000)
+            if not batch:
+                break
+            conn.executemany(
+                """
+                INSERT OR REPLACE INTO equilibrium_lookup(
+                    state_key,
+                    attacker_points,
+                    defender_points,
+                    attacker_shocks,
+                    defender_shocks,
+                    chair_mask,
+                    state_value,
+                    attacker_strategy,
+                    defender_strategy,
+                    is_terminal
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                batch,
+            )
+            conn.commit()
     finally:
+        src.close()
         conn.close()
 
 
@@ -205,11 +235,12 @@ def main() -> None:
 
     start = time.perf_counter()
 
-    if args.workers > 1 and not args.resume:
+    if args.workers > 1:
         shard_dir = db_path.parent / "_shards"
         shard_dir.mkdir(parents=True, exist_ok=True)
-        for stale in shard_dir.glob("*.sqlite3"):
-            stale.unlink(missing_ok=True)
+        if not args.resume:
+            for stale in shard_dir.glob("subroot_*.sqlite3*"):
+                stale.unlink(missing_ok=True)
 
         subroots = _next_subroots(root)
         base_rows = _count_rows(db_path)
@@ -218,12 +249,20 @@ def main() -> None:
             f"base_rows={base_rows} base_goal_pct={pct(base_rows):.3f}%"
         )
 
-        payloads: list[tuple[GameState, str]] = []
+        payloads: list[tuple[GameState, str, int, int]] = []
         shard_paths: list[Path] = []
+        reused_rows = 0
         for idx, subroot in enumerate(subroots):
             shard = shard_dir / f"subroot_{idx}.sqlite3"
-            payloads.append((subroot, str(shard)))
             shard_paths.append(shard)
+            existing_rows = _count_rows(shard)
+            if args.resume and existing_rows > 0:
+                reused_rows += existing_rows
+                continue
+            payloads.append((subroot, str(shard), args.save_interval, args.progress_interval))
+
+        if args.resume:
+            emit(f"parallel_resume_reused shard_rows={reused_rows} skipped_subroots={len(subroots)-len(payloads)}")
 
         done = 0
         done_rows = 0
@@ -233,9 +272,10 @@ def main() -> None:
                 finished, pending = cf.wait(pending, timeout=30, return_when=cf.FIRST_COMPLETED)
                 if not finished:
                     elapsed = max(time.perf_counter() - start, 1e-9)
-                    est_rows = base_rows + done_rows
+                    persisted_rows = sum(_count_rows(path) for path in shard_paths)
+                    est_rows = base_rows + persisted_rows
                     emit(
-                        f"parallel_heartbeat done={done}/{len(payloads)} rows={done_rows} "
+                        f"parallel_heartbeat done={done}/{len(payloads)} persisted_rows={persisted_rows} "
                         f"est_total_rows={est_rows} goal_pct={pct(est_rows):.3f}% elapsed={elapsed:.1f}s"
                     )
                     continue
@@ -253,6 +293,11 @@ def main() -> None:
                         f"states={states} rows={done_rows} est_total_rows={est_rows} merged_rows={merged_rows} "
                         f"goal_pct={pct(est_rows):.3f}% elapsed={elapsed:.1f}s"
                     )
+
+        if args.resume:
+            _merge_shards_into_db(db_path, shard_paths)
+            if not payloads:
+                emit("parallel_resume_merge_only reason=no_new_subroots")
 
         merged_seed = load_state_records_from_sqlite(db_path)
 

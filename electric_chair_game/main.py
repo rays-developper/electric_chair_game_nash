@@ -12,7 +12,7 @@ from __future__ import annotations
 import sys
 from typing import List
 
-from .game_state import GameState, MAX_ROUNDS, MAX_SHOCKS
+from .game_state import GameState, MAX_SHOCKS, MAX_TURNS
 from electric_chair_game.dynamic_solver import compute_full_game_equilibrium
 from .nash_solver import compute_nash_equilibrium
 
@@ -75,7 +75,7 @@ def main() -> None:
     try:
         my_points = int(input("あなたの現在ポイント: "))
         opp_points = int(input("相手の現在ポイント: "))
-        round_num = int(input(f"現在の回戦 (1-{MAX_ROUNDS}): "))
+        round_num = int(input(f"現在の手番 (1-{MAX_TURNS}, 8回戦×表裏): "))
         my_shocks = int(input(f"あなたが受けた電撃回数 (0-{MAX_SHOCKS - 1}): "))
         opp_shocks = int(input(f"相手が受けた電撃回数 (0-{MAX_SHOCKS - 1}): "))
         chairs_raw = input(
@@ -111,7 +111,7 @@ def main() -> None:
     print(f"\n{'='*52}")
     print("  現在のゲーム状態")
     print(f"{'='*52}")
-    print(f"  回戦         : {round_num} / {MAX_ROUNDS}")
+    print(f"  手番         : {round_num} / {MAX_TURNS}  (8回戦×表裏)")
     print(f"  攻撃側ポイント: {attacker_points}")
     print(f"  守備側ポイント: {defender_points}")
     print(f"  残り椅子     : {remaining}")

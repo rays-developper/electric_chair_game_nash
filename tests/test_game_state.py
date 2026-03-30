@@ -4,6 +4,7 @@ import pytest
 from electric_chair_game.game_state import (
     GameState,
     MAX_ROUNDS,
+    MAX_TURNS,
     WIN_POINTS,
     MAX_SHOCKS,
 )
@@ -76,7 +77,7 @@ class TestIsGameOver:
         assert not gs.is_game_over()
 
     def test_over_max_rounds(self):
-        gs = GameState(round_num=MAX_ROUNDS + 1, attacker_points=10,
+        gs = GameState(round_num=MAX_TURNS + 1, attacker_points=10,
                        defender_points=5, remaining_chairs=[1, 2, 3])
         assert gs.is_game_over()
 
@@ -123,7 +124,7 @@ class TestWinner:
         assert gs.winner() == "defender"
 
     def test_tie_after_max_rounds(self):
-        gs = GameState(round_num=MAX_ROUNDS + 1, attacker_points=5, defender_points=5,
+        gs = GameState(round_num=MAX_TURNS + 1, attacker_points=5, defender_points=5,
                        remaining_chairs=[1, 2])
         assert gs.winner() == "tie"
 

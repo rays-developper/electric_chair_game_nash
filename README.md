@@ -114,6 +114,37 @@ python scripts/export_json.py --output docs/data/equilibrium.json
 
 - `--limit N` で件数を制限し、ファイルサイズを調整できます。
 
+### SQLiteをそのままRange配信する（推奨）
+
+GitHub Pages は HTTP Range リクエストに対応しているため、ブラウザ側SQLiteエンジンで
+必要ページだけ取得できます（全ファイル一括DL不要）。
+
+1. Pages向け compact shard SQLite を生成
+
+```bash
+python scripts/build_pages_sqlite.py \
+	--src data/equilibrium_lookup.sqlite3 \
+	--dst-dir docs/data \
+	--manifest docs/data/sqlite_manifest.json \
+	--shards 32 \
+	--sv-scale 500
+```
+
+- 出力は `docs/data/equilibrium_shard_*.sqlite3` と `docs/data/sqlite_manifest.json`
+- `--sv-scale` は状態価値の有効数字を下げる設定（値が小さいほど粗く・軽くなる）
+- 1ファイル100MB制約に近づく場合は `--shards` を増やす
+
+2. `docs/sqlite.html` を公開ページとして利用
+
+- URL例: `https://<username>.github.io/<repo>/sqlite.html`
+- フロントは `sql.js-httpvfs` を使って `sqlite_manifest.json` から該当shardを選び、
+	Range読み込みします。
+
+補足:
+
+- 既存の `docs/index.html` はJSONチャンク版です。
+- フルデータ検索は `docs/sqlite.html` を使うと運用しやすいです。
+
 ### ローカルテスト
 
 ```bash
