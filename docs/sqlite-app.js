@@ -18,6 +18,7 @@ const dataBaseUrl = new URL("./data/", import.meta.url);
 let manifest = null;
 let activeShardFile = null;
 let dbWorker = null;
+const shardLengthCache = new Map();
 
 function computeStateKey(attackerPoints, defenderPoints, attackerShocks, defenderShocks, chairMask) {
   return (
@@ -204,13 +205,41 @@ function findShardMeta(fileName) {
   return manifest.ranges.find((range) => range.file === fileName) || null;
 }
 
+async function resolveShardLength(fileName, shardUrl) {
+  if (shardLengthCache.has(fileName)) {
+    return shardLengthCache.get(fileName);
+  }
+
+  const shardMeta = findShardMeta(fileName);
+  const fromManifest = Number(shardMeta?.size_bytes || 0);
+  if (Number.isFinite(fromManifest) && fromManifest > 0) {
+    shardLengthCache.set(fileName, fromManifest);
+    return fromManifest;
+  }
+
+  const resp = await fetch(shardUrl, {
+    method: "GET",
+    headers: { Range: "bytes=0-0" },
+    cache: "no-store",
+  });
+  if (!resp.ok && resp.status !== 206) {
+    throw new Error(`failed to probe shard length: ${fileName} status=${resp.status}`);
+  }
+  const contentRange = resp.headers.get("content-range") || resp.headers.get("Content-Range") || "";
+  const m = contentRange.match(/\/(\d+)\s*$/);
+  const parsed = m ? Number(m[1]) : 0;
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`failed to parse shard length from content-range: ${fileName}`);
+  }
+  shardLengthCache.set(fileName, parsed);
+  return parsed;
+}
+
 async function initWorkerForShard(fileName) {
   if (dbWorker && activeShardFile === fileName) return dbWorker;
 
-  const shardMeta = findShardMeta(fileName);
-  if (!shardMeta || !Number.isFinite(Number(shardMeta.size_bytes))) {
-    throw new Error(`shard metadata missing size_bytes: ${fileName}`);
-  }
+  const shardUrl = new URL(fileName, dataBaseUrl).toString();
+  const shardLength = await resolveShardLength(fileName, shardUrl);
 
   if (dbWorker && dbWorker.db && typeof dbWorker.db.close === "function") {
     try {
@@ -232,8 +261,9 @@ async function initWorkerForShard(fileName) {
         config: {
           serverMode: "full",
           requestChunkSize: 4096,
-          url: new URL(fileName, dataBaseUrl).toString(),
-          fileLength: Number(shardMeta.size_bytes),
+          url: shardUrl,
+          fileLength: shardLength,
+          databaseLengthBytes: shardLength,
           cacheBust: "v1",
         },
       },
