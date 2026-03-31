@@ -13,6 +13,7 @@ const selectedChairs = new Set(allChairs);
 
 const workerUrl = new URL("./vendor/sqlite.worker.js", import.meta.url).toString();
 const wasmUrl = new URL("./vendor/sql-wasm.wasm", import.meta.url).toString();
+const dataBaseUrl = new URL("./data/", import.meta.url);
 
 let manifest = null;
 let activeShardFile = null;
@@ -221,7 +222,7 @@ async function initWorkerForShard(fileName) {
         config: {
           serverMode: "full",
           requestChunkSize: 4096,
-          url: `data/${fileName}`,
+          url: new URL(fileName, dataBaseUrl).toString(),
           cacheBust: "v1",
         },
       },
