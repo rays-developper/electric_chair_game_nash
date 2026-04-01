@@ -48,29 +48,6 @@ class TestMaxRemainingPoints:
         assert gs.max_remaining_points() == 0
 
 
-class TestInsurmountableLead:
-    def test_not_insurmountable_at_start(self):
-        gs = GameState()
-        assert not gs.is_insurmountable_lead()
-
-    def test_insurmountable_large_lead(self):
-        # attacker 50 pts ahead, only 3 points left → 50 > 3
-        gs = GameState(attacker_points=50, defender_points=0, remaining_chairs=[1, 2])
-        assert gs.is_insurmountable_lead()
-
-    def test_not_insurmountable_close_race(self):
-        # 5 pts difference, 21 remaining (1+2+3+4+5+6)
-        gs = GameState(attacker_points=10, defender_points=5,
-                       remaining_chairs=[1, 2, 3, 4, 5, 6])
-        assert not gs.is_insurmountable_lead()
-
-    def test_exactly_equal_lead_to_max(self):
-        # lead == max_remaining: NOT insurmountable (opponent can still tie)
-        gs = GameState(attacker_points=5, defender_points=0, remaining_chairs=[3, 2])
-        # lead = 5, max_remaining = 5 → not strictly greater
-        assert not gs.is_insurmountable_lead()
-
-
 class TestIsGameOver:
     def test_not_over_initial(self):
         gs = GameState()
@@ -99,10 +76,6 @@ class TestIsGameOver:
 
     def test_over_one_chair_remains(self):
         gs = GameState(remaining_chairs=[5], attacker_points=10, defender_points=5)
-        assert gs.is_game_over()
-
-    def test_over_insurmountable_lead(self):
-        gs = GameState(attacker_points=50, defender_points=0, remaining_chairs=[1])
         assert gs.is_game_over()
 
 

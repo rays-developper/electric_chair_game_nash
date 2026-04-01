@@ -57,11 +57,6 @@ def _terminal_value(
     if p2_points >= WIN_POINTS:
         return -1.0
 
-    remaining_total = sum(chairs)
-    diff = p1_points - p2_points
-    if abs(diff) > remaining_total:
-        return 1.0 if diff > 0 else -1.0
-
     if round_num > MAX_TURNS or len(chairs) <= 1:
         if p1_points > p2_points:
             return 1.0

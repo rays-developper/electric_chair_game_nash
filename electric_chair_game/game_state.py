@@ -10,7 +10,6 @@ Rules summary:
 Win conditions (first to satisfy):
 - Most points after 8 rounds.
 - Reach 40 points first.
-- Build an insurmountable point lead (opponent cannot catch up with remaining chairs).
 - Cause the opponent to be shocked 3 times.
 """
 
@@ -59,11 +58,6 @@ class GameState:
         """Sum of all remaining chair values (upper bound on future gains)."""
         return sum(self.remaining_chairs)
 
-    def is_insurmountable_lead(self) -> bool:
-        """True if the leading player's advantage exceeds the total remaining points."""
-        diff = abs(self.attacker_points - self.defender_points)
-        return diff > self.max_remaining_points()
-
     def winner(self) -> str | None:
         """Return 'attacker', 'defender', or None if the game is still ongoing."""
         if self.attacker_shocks >= MAX_SHOCKS:
@@ -74,8 +68,6 @@ class GameState:
             return "attacker"
         if self.defender_points >= WIN_POINTS:
             return "defender"
-        if self.is_insurmountable_lead():
-            return "attacker" if self.attacker_points > self.defender_points else "defender"
         if self.round_num > MAX_TURNS or len(self.remaining_chairs) <= 1:
             if self.attacker_points > self.defender_points:
                 return "attacker"

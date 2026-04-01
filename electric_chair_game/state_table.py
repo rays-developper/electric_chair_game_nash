@@ -128,11 +128,6 @@ def _terminal_value(
     if defender_points >= WIN_POINTS:
         return -1.0
 
-    remaining_total = sum(chairs)
-    diff = attacker_points - defender_points
-    if abs(diff) > remaining_total:
-        return 1.0 if diff > 0 else -1.0
-
     elapsed_turns = (12 - len(chairs)) + attacker_shocks + defender_shocks
     if elapsed_turns >= MAX_TURNS or len(chairs) <= 1:
         if attacker_points > defender_points:
