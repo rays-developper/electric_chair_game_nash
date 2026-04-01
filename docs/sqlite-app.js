@@ -131,6 +131,48 @@ function setupToggleButtons() {
   }
 }
 
+function setToggleValue(targetId, value) {
+  const hidden = document.getElementById(targetId);
+  if (!hidden) return;
+  hidden.value = String(value);
+
+  const selector = `.toggle-btn[data-target="${targetId}"]`;
+  const buttons = document.querySelectorAll(selector);
+  for (const button of buttons) {
+    const isActive = button.dataset.value === String(value);
+    button.classList.toggle("active", isActive);
+  }
+}
+
+function setupSwapSides() {
+  const button = document.getElementById("swap_sides");
+  if (!button) return;
+
+  button.addEventListener("click", () => {
+    const attackerPointsInput = document.getElementById("attacker_points");
+    const defenderPointsInput = document.getElementById("defender_points");
+    const attackerPoints = attackerPointsInput.value;
+    const defenderPoints = defenderPointsInput.value;
+    attackerPointsInput.value = defenderPoints;
+    defenderPointsInput.value = attackerPoints;
+    attackerPointsInput.dispatchEvent(new Event("input"));
+    defenderPointsInput.dispatchEvent(new Event("input"));
+
+    const attackerShocks = document.getElementById("attacker_shocks").value;
+    const defenderShocks = document.getElementById("defender_shocks").value;
+    setToggleValue("attacker_shocks", defenderShocks);
+    setToggleValue("defender_shocks", attackerShocks);
+  });
+}
+
+function updateDatasetStats(meta) {
+  const el = document.getElementById("dataset-stats");
+  if (!el || !meta) return;
+  const rows = Number(meta.rows || 0).toLocaleString();
+  const shards = Number(meta.shards || 0).toLocaleString();
+  el.textContent = `データ件数: ${rows}件（${shards} shard）`;
+}
+
 function setupQuickChairActions() {
   document.getElementById("select_all").addEventListener("click", () => {
     selectedChairs.clear();
@@ -312,6 +354,7 @@ window.addEventListener("DOMContentLoaded", () => {
   setupRange("attacker_points", "attacker_points_value");
   setupRange("defender_points", "defender_points_value");
   setupToggleButtons();
+  setupSwapSides();
   setupQuickChairActions();
   renderChairButtons();
 
@@ -320,10 +363,15 @@ window.addEventListener("DOMContentLoaded", () => {
       const summary = document.getElementById("summary");
       summary.className = "summary-box status-msg";
       summary.textContent = `SQLite準備完了（${Number(meta.rows).toLocaleString()}件 / ${meta.shards} shard）`;
+      updateDatasetStats(meta);
     })
     .catch((err) => {
     const summary = document.getElementById("summary");
     summary.className = "summary-box status-msg";
       summary.textContent = `SQLite初期化エラー: ${err}`;
+      const datasetStats = document.getElementById("dataset-stats");
+      if (datasetStats) {
+        datasetStats.textContent = "データ件数: 読み込み失敗";
+      }
     });
 });

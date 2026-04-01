@@ -12,6 +12,7 @@
     <header class="header">
       <h1>⚡ 電気椅子ゲーム</h1>
       <p class="tagline">均衡戦略ルックアップ（SQLite + HTTP Range）</p>
+      <p class="tagline" id="dataset-stats">データ件数: 読み込み中...</p>
     </header>
 
     <form id="lookup-form" class="form-grid">
@@ -20,6 +21,9 @@
         <div class="panel-header">
           <span class="panel-icon">🎯</span>
           <h2>ポイント</h2>
+          <div class="panel-actions">
+            <button type="button" class="action-btn" id="swap_sides">攻守入替</button>
+          </div>
         </div>
         <div class="panel-body two-col">
           <div class="input-group">
@@ -120,6 +124,6 @@
     </section>
   </main>
 
-  <script type="module" src="sqlite-app.js?v=20260331e"></script>
+  <script type="module" src="sqlite-app.js?v=20260401a"></script>
 </body>
 </html>
